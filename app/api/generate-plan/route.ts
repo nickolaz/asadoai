@@ -5,8 +5,6 @@ import { products } from '@/data/products';
 import { getLiveCutPrices } from '@/lib/live-prices';
 import { createSeedPlan } from '@/lib/plan';
 
-export const runtime = 'edge';
-
 const inputSchema = z.object({
   people: z.number().int().min(1).max(30),
   budget: z.number().min(10000).max(1000000),

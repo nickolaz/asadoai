@@ -1,8 +1,6 @@
 import { z } from 'zod';
 import type { MapLocation, MapLocationKind } from '@/data/map-locations';
 
-export const runtime = 'edge';
-
 const inputSchema = z.object({
   longitude: z.number().min(-180).max(180),
   latitude: z.number().min(-90).max(90),

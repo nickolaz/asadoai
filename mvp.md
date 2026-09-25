@@ -101,9 +101,9 @@ Rutas de Next.js
 
 | Integración | Propósito | Condición |
 |---|---|---|
-| Webflow Cloud | Hosting de Next.js y montaje de la aplicación | Usar Next.js 15+ y runtime Edge/Cloudflare Workers. |
+| Webflow Cloud | Hosting de Next.js y montaje de la aplicación | Usar Next.js 15+ sobre OpenNext/Cloudflare Workers; los Route Handlers usan el runtime Node.js por defecto del adaptador. |
 | Tailwind CSS | Estilos y tokens de la app | Consumir los tokens de `design.md`; no existe una segunda capa de estilos en Webflow Designer. |
-| Vercel AI SDK | Generar y validar la propuesta estructurada del plan | Ejecutar solamente en el endpoint de servidor compatible con Edge. |
+| Vercel AI SDK | Generar y validar la propuesta estructurada del plan | Ejecutar solamente en el endpoint de servidor compatible con Workers. |
 | Vercel AI Gateway | Enrutar la llamada al modelo y custodiar acceso | Usar `AI_GATEWAY_API_KEY` como secreto de Webflow Cloud; nunca exponerla al cliente. |
 | `google/gemini-2.5-flash` | Modelo inicial | Invocarlo por su ID con prefijo de proveedor a través de AI Gateway; permitir reemplazo por `AI_MODEL`. |
 | Mapbox GL JS | Renderizar el mapa, pines, popups y controles de CABA | `NEXT_PUBLIC_MAPBOX_TOKEN` debe ser un token público `pk.*` restringido al dominio publicado. |
@@ -143,7 +143,7 @@ Navegador: resultado del plan
 ### Contrato del endpoint
 
 - Ruta: `app/api/generate-plan/route.ts`.
-- Runtime: declarar `export const runtime = 'edge'` para que la ruta sea compatible con Webflow Cloud.
+- Runtime: no declarar `export const runtime = 'edge'`; OpenNext ejecuta el Route Handler con su runtime Node.js compatible con Cloudflare Workers.
 - Entrada: `personas`, `presupuesto` y `ubicación`, con validación previa a cualquier llamada externa.
 - Proceso: cargar los ocho cortes estáticos y su relación con imágenes; enviar al LLM solo esos IDs, rangos de kg y nombres; solicitar de 2 a 4 recomendaciones con `quantityKg`; validar, normalizar y agregar los complementos determinísticos. Con la lista final, hacer una segunda llamada estructurada para el cronograma.
 - Salida: ítems identificados por IDs de catálogo, cantidades recomendadas, recetas, cronograma y tips. El endpoint recalcula todos los valores monetarios antes de responder, usando precios vivos válidos o el fallback de `products.ts`.
@@ -152,7 +152,7 @@ Navegador: resultado del plan
 
 El navegador llama a la ruta usando el prefijo de montaje: `${NEXT_PUBLIC_BASE_PATH}/api/generate-plan`. No debe asumir que la aplicación está en la raíz del dominio.
 
-> **Compatibilidad a vigilar:** Next.js 16 marca `runtime = 'edge'` como deprecado, pero la guía vigente de Webflow Cloud exige esa directiva para las rutas API de Next.js sobre Workers. Se conserva la directiva para el deploy en Webflow Cloud y se debe revisar la guía de Webflow/OpenNext antes de cada actualización mayor de Next.js.
+> **Compatibilidad a vigilar:** Webflow Cloud construye Next.js mediante OpenNext/Cloudflare. Con Next.js 16, declarar `runtime = 'edge'` puede producir un deploy exitoso pero respuestas 500 al invocar Route Handlers. Se omite esa directiva y se revisará la guía de Webflow/OpenNext antes de cada actualización mayor de Next.js.
 
 ### Variables de entorno
 
@@ -183,7 +183,7 @@ Una verificación local realizada el 25/09/2026 mostró que AI Gateway exige una
 ## Criterios de aceptación
 
 - [ ] Con personas, presupuesto y ubicación válidos, la aplicación produce un plan estructurado.
-- [ ] El endpoint de generación declara runtime Edge y funciona bajo la ruta de montaje de Webflow Cloud.
+- [ ] El endpoint de generación funciona bajo la ruta de montaje de Webflow Cloud sin declarar el runtime Edge de Next.js.
 - [ ] La llamada de IA ocurre exclusivamente desde el endpoint de Next.js hacia AI Gateway, con `AI_GATEWAY_API_KEY` guardada como secreto.
 - [ ] Tailwind CSS implementa los tokens visuales definidos en `design.md`.
 - [ ] Cada ítem del plan pertenece al catálogo estático y todos los importes se calculan en cliente/servidor sin depender del texto del LLM.
